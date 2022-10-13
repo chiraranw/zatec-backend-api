@@ -1,14 +1,17 @@
 package com.chiraranw.housesapp.service.impl;
 
 import com.chiraranw.housesapp.dto.HouseDto;
+import com.chiraranw.housesapp.exceptions.ResourceNotFoundException;
 import com.chiraranw.housesapp.model.House;
 import com.chiraranw.housesapp.service.HousesService;
 import com.chiraranw.housesapp.util.UIHouses;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -63,16 +66,23 @@ public class HousesServiceImpl implements HousesService {
 
     @Override
     public HouseDto searchById(Long id) {
-        String url=baseUrl+"houses/"+id;
-        return  UIHouses
+        String url = baseUrl + "houses/" + id;
+        return UIHouses
                 .housesSentToUI
                 .stream()
                 .filter(houseDto -> houseDto.getUrl().equals(url))
                 .findFirst()
                 .orElseGet(() -> client.get()
-                .uri("/houses/{id}", id)
-                .retrieve()
-                .bodyToMono(HouseDto.class)
-                .block());
+                        .uri("/houses/{id}", id)
+                        .exchangeToMono(
+                                clientResponse -> {
+                                    if (clientResponse.statusCode().equals(HttpStatus.NOT_FOUND)) {
+                                        throw new ResourceNotFoundException("Not found");
+                                    } else {
+                                        return clientResponse.bodyToMono(HouseDto.class);
+                                    }
+                                }
+                        )
+                        .block());
     }
 }

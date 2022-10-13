@@ -3,6 +3,7 @@ package com.chiraranw.housesapp.config;
 import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
 import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 @Configuration
+@ConditionalOnProperty(value = "keycloak.enabled", matchIfMissing = true)
 public class KeycloakWebSecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
 
@@ -42,8 +44,10 @@ public class KeycloakWebSecurityConfig extends KeycloakWebSecurityConfigurerAdap
     protected void configure(HttpSecurity http) throws Exception {
         super.configure(http);
         http.cors().and().authorizeRequests()
-                .antMatchers("/api/v1/houses/*")
+                .antMatchers("/api/v1/*")
                 .hasRole("dev")
+                .antMatchers()
+                .authenticated()
                 .anyRequest()
                 .permitAll();
     }
